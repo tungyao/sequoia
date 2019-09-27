@@ -1,4 +1,4 @@
-package tndb
+package sequoia
 
 type operation interface {
 }

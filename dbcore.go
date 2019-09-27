@@ -1,4 +1,4 @@
-package tndb
+package sequoia
 
 import (
 	"database/sql"
