@@ -129,7 +129,7 @@ func (d *DB) IsExits() *DB {
 //TODO 使用数据库 Use
 func (d *DB) Use(dbname string, pwd string, name string) *DB {
 	d.db = dbname
-	db, err := sql.Open("mysql", "root:"+pwd+"@tcp(localhost)/"+dbname+"?charset=utf8")
+	db, err := sql.Open("mysql", name+":"+pwd+"@tcp(localhost)/"+dbname+"?charset=utf8")
 	fmt.Println(err)
 	d.kel = db
 	d.formatSql = make(map[string]string)
