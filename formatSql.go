@@ -26,15 +26,19 @@ func ConvertArrayString(arr []string) string {
 	return "(" + sl[:len(sl)-1] + ")"
 }
 
-func keyForInsertOrUpdate(k interface{}) string {
+func keyForInsertOrUpdate(k interface{}, op int) string {
 	sl := ""
-	switch k.(type) {
-	case map[string]string:
+	if op == INSERT {
+		switch k.(type) {
+		case map[string]string:
+			sl = " set " + ConvertMapString(k.(map[string]string))
+		case []string:
+			sl = " values " + ConvertArrayString(k.([]string))
+		default:
+			sl = ""
+		}
+	} else if op == UPDATE {
 		sl = " set " + ConvertMapString(k.(map[string]string))
-	case []string:
-		sl = " values " + ConvertArrayString(k.([]string))
-	default:
-		sl = ""
 	}
 	return sl
 }

@@ -154,7 +154,7 @@ func (d *DB) Update(table string) *DB {
 
 //TODO 插入数据 / 升级 KEY
 func (d *DB) Key(k interface{}) *DB {
-	sl := keyForInsertOrUpdate(k)
+	sl := keyForInsertOrUpdate(k, d.op)
 	//switch d.op {
 	//case INSERT:
 	//	d.sql += sl
@@ -176,10 +176,8 @@ func (d *DB) Done() int64 {
 	switch d.op {
 	case INSERT:
 		d.sql = d.formatSql["type"] + d.formatSql["key"]
-		break
 	case UPDATE:
 		d.sql = d.formatSql["type"] + d.formatSql["key"] + d.formatSql["where"]
-
 	}
 	stmt, _ := d.kel.Prepare(d.sql)
 	res, err := stmt.Exec()
