@@ -22,7 +22,7 @@ type FUNC interface {
 	FindOne(column ...string) map[string]interface{}
 	Count() *DB
 	IsExits() *DB
-
+	Delete(string) *DB
 	Insert(string) *DB
 	Update(string) *DB
 	Key(interface{}) *DB
@@ -40,13 +40,26 @@ type DB struct {
 	sql       string
 	kel       *sql.DB
 	formatSql map[string]string
+	MaxOpen   int
+	MaxIde    int
 }
 
+func NewDB(MaxOpen, MaxIde int) *DB {
+	return &DB{
+		MaxOpen: MaxOpen,
+		MaxIde:  MaxIde,
+	}
+}
 func (d *DB) Select(tablename string) *DB {
 	d.op = Select
 	d.formatSql = make(map[string]string)
 	d.formatSql["select"] = "select "
-	d.formatSql["from"] = " from " + tablename
+	d.formatSql["from"] = " from `" + tablename + "`"
+	return d
+}
+func (d *DB) Delete(s string) *DB {
+	d.op = DELETE
+	d.formatSql["type"] = "delete from `" + s + "`"
 	return d
 }
 func (d *DB) All(column ...string) []map[string]interface{} {
@@ -130,7 +143,11 @@ func (d *DB) IsExits() *DB {
 func (d *DB) Use(dbname string, pwd string, name string) *DB {
 	d.db = dbname
 	db, err := sql.Open("mysql", name+":"+pwd+"@tcp(localhost)/"+dbname+"?charset=utf8")
-	fmt.Println(err)
+	db.SetMaxOpenConns(2000)
+	db.SetMaxIdleConns(1000)
+	if err != nil {
+		panic(err)
+	}
 	d.kel = db
 	d.formatSql = make(map[string]string)
 	return d
@@ -140,7 +157,7 @@ func (d *DB) Use(dbname string, pwd string, name string) *DB {
 func (d *DB) Insert(table string) *DB {
 	d.op = INSERT
 	d.table = table
-	d.formatSql["type"] = "insert into " + table
+	d.formatSql["type"] = "insert into `" + table + "`"
 	return d
 }
 
@@ -148,7 +165,7 @@ func (d *DB) Insert(table string) *DB {
 func (d *DB) Update(table string) *DB {
 	d.op = UPDATE
 	d.table = table
-	d.formatSql["type"] = "update " + table
+	d.formatSql["type"] = "update `" + table + "`"
 	return d
 }
 
@@ -178,6 +195,8 @@ func (d *DB) Done() int64 {
 		d.sql = d.formatSql["type"] + d.formatSql["key"]
 	case UPDATE:
 		d.sql = d.formatSql["type"] + d.formatSql["key"] + d.formatSql["where"]
+	case DELETE:
+		d.sql = d.formatSql["type"] + d.formatSql["where"]
 	}
 	stmt, _ := d.kel.Prepare(d.sql)
 	res, err := stmt.Exec()
