@@ -1,12 +1,12 @@
 package sequoia
 
 import (
+	"../sequoia/caches"
 	"database/sql"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/tungyao/tjson"
 	"log"
-	"src/github.com/tungyao/sequoia/cache"
 )
 
 const (
@@ -44,7 +44,7 @@ type DB struct {
 	formatSql map[string]string
 	MaxOpen   int
 	MaxIde    int
-	Cache     *cache.Conn
+	Cache     *caches.Conn
 }
 type Config struct {
 	MaxOpen, MaxIde int
@@ -53,7 +53,7 @@ type Config struct {
 
 func NewDB(c Config) *DB {
 	if c.Cache {
-		cc := cache.New()
+		cc := caches.New()
 		return &DB{
 			MaxOpen: c.MaxOpen,
 			MaxIde:  c.MaxIde,
@@ -112,7 +112,7 @@ func (d *DB) All(column ...string) []map[string]interface{} {
 	}
 	if d.Cache != nil {
 		log.Println("set caches")
-		d.Cache.HSet(cache.Cache{
+		d.Cache.HSet(caches.Cache{
 			Key:   d.sql,
 			Value: tjson.Encode(data),
 			Time:  0,
@@ -167,7 +167,7 @@ func (d *DB) FindOne(column ...string) map[string]interface{} {
 	da := B2S(data).(map[string]interface{})
 	if d.Cache != nil {
 		log.Println("set caches")
-		d.Cache.HSet(cache.Cache{
+		d.Cache.HSet(caches.Cache{
 			Key:   d.sql,
 			Value: tjson.Encode(da),
 			Time:  0,
