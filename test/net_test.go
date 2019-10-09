@@ -1,16 +1,16 @@
 package test
 
 import (
-	"../cache"
+	"../caches"
 	"testing"
 )
 
 func TestRedis(t *testing.T) {
-	//cache.HSet(cache.Cache{
+	//caches.HSet(caches.Cache{
 	//	Key:"test",
 	//	Value:"hello",
 	//})
-	//cache.HSet(cache.Cache{
+	//caches.HSet(caches.Cache{
 	//	Key:   "test",
 	//	Value: "hellos",
 	//	Time:  0,
