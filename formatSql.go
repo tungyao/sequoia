@@ -1,5 +1,10 @@
 package sequoia
 
+import (
+	"github.com/tungyao/tjson"
+	"strings"
+)
+
 type operation interface {
 }
 
@@ -25,7 +30,13 @@ func ConvertArrayString(arr []string) string {
 	}
 	return "(" + sl[:len(sl)-1] + ")"
 }
-
+func ConvertStringToArray(s string) []map[string]interface{} {
+	s = strings.Replace(s, "[", "", -1)
+	s = strings.Replace(s, "]", "", -1)
+	data := make([]map[string]interface{}, 0)
+	data = append(data, tjson.Decode(s))
+	return data
+}
 func keyForInsertOrUpdate(k interface{}, op int) string {
 	sl := ""
 	if op == INSERT {

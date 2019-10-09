@@ -1,9 +1,11 @@
 package sequoia
 
 import (
+	"./cache"
 	"database/sql"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/tungyao/tjson"
 	"log"
 )
 
@@ -42,12 +44,25 @@ type DB struct {
 	formatSql map[string]string
 	MaxOpen   int
 	MaxIde    int
+	Cache     *cache.Conn
+}
+type Config struct {
+	MaxOpen, MaxIde int
+	Cache           bool
 }
 
-func NewDB(MaxOpen, MaxIde int) *DB {
+func NewDB(c Config) *DB {
+	if c.Cache {
+		cc := cache.New()
+		return &DB{
+			MaxOpen: c.MaxOpen,
+			MaxIde:  c.MaxIde,
+			Cache:   cc,
+		}
+	}
 	return &DB{
-		MaxOpen: MaxOpen,
-		MaxIde:  MaxIde,
+		MaxOpen: c.MaxOpen,
+		MaxIde:  c.MaxIde,
 	}
 }
 func (d *DB) Select(tablename string) *DB {
@@ -65,7 +80,13 @@ func (d *DB) Delete(s string) *DB {
 func (d *DB) All(column ...string) []map[string]interface{} {
 	d.formatSql["column"] = setColumn(column)
 	d.sql = d.formatSql["select"] + d.formatSql["column"] + d.formatSql["from"] + d.formatSql["where"]
-	fmt.Println(d.sql)
+	if d.Cache != nil {
+		hash := d.Cache.HGet(d.sql)
+		if hash != nil {
+			log.Println("get cache")
+			return ConvertStringToArray(hash.Value.(string))
+		}
+	}
 	rows, err := d.kel.Query(d.sql)
 	toError(err)
 	columns, _ := rows.Columns()
@@ -89,6 +110,14 @@ func (d *DB) All(column ...string) []map[string]interface{} {
 		n++
 
 	}
+	if d.Cache != nil {
+		log.Println("set cache")
+		d.Cache.HSet(cache.Cache{
+			Key:   d.sql,
+			Value: tjson.Encode(data),
+			Time:  0,
+		})
+	}
 	return data
 }
 func setColumn(column ...[]string) string {
@@ -110,7 +139,13 @@ func (d *DB) FindOne(column ...string) map[string]interface{} {
 	d.formatSql["limit"] = "limit 1"
 
 	d.sql = d.formatSql["select"] + d.formatSql["column"] + d.formatSql["from"] + d.formatSql["where"] + d.formatSql["limit"]
-
+	if d.Cache != nil {
+		hash := d.Cache.HGet(d.sql)
+		if hash != nil {
+			log.Println("get cache")
+			return tjson.Decode(hash.Value.(string))
+		}
+	}
 	rows, err := d.kel.Query(d.sql)
 	toError(err)
 	columns, _ := rows.Columns()
@@ -129,7 +164,16 @@ func (d *DB) FindOne(column ...string) map[string]interface{} {
 			data[columnName] = *columnValue
 		}
 	}
-	return B2S(data).(map[string]interface{})
+	da := B2S(data).(map[string]interface{})
+	if d.Cache != nil {
+		log.Println("set cache")
+		d.Cache.HSet(cache.Cache{
+			Key:   d.sql,
+			Value: tjson.Encode(da),
+			Time:  0,
+		})
+	}
+	return da
 }
 
 func (d *DB) Count() *DB {
