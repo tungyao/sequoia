@@ -4,7 +4,7 @@
 Initialize connection,you can use two ways:
 ```go
 //`test` is database
-var db tndb.FUNC = new(tndb.DB).Use("test", "123456")
+var db tndb.FUNC = sequoia.NewDB(int,int).Use("test", "123456")
 db:= new(tndb.DB).Use("test", "123456")
 ```
 Select one column
