@@ -102,16 +102,17 @@ func (d *DB) All(column ...string) []map[string]interface{} {
 		}
 		rows.Scan(columnPointers...)
 		//data[n] = make(map[string]interface{})
+		columno := make(map[string]interface{}, length)
 		for i := 0; i < length; i++ {
 			columnName := columns[i]
 			columnValue := columnPointers[i].(*interface{})
 			//data[n][columnName] = *columnValue
-			data = append(data, map[string]interface{}{columnName: *columnValue})
+			columno[columnName] = *columnValue
 		}
+		data = append(data, columno)
 		n++
 
 	}
-	log.Println(data)
 	if d.Cache != nil {
 		log.Println("set caches")
 		d.Cache.HSet(caches.Cache{

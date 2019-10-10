@@ -2,7 +2,6 @@ package test
 
 import (
 	"../../sequoia"
-	"log"
 	"testing"
 )
 
@@ -17,8 +16,10 @@ func TestDb(t *testing.T) {
 	//sequoia.ConvertStringToArray(d)
 	//db.Insert("test").Key(map[string]string{"name":"asdzxc"}).Done()
 	//db.Update("test").Key(map[string]string{"name": "asdasdas"}).Where(map[string]string{"name": "asdzxc"}).Done()
-	data := db.Select("test").Where(map[string]string{"id": "5", "name": "123"}).FindOne("name")
-	log.Println(data)
+	//data := db.Select("test").All("name","id")
+	data := db.Select("test").Where(map[string]string{"id": "1"}).All("name", "id")
+	t.Log(data)
+	//log.Println(string(data[0]["name"].([]uint8)))
 	//data2:=db.Select("test").All("id","name")
 	//fmt.Println(data2)
 	//sql := "insert into test set name='hello'"
