@@ -87,6 +87,7 @@ func (d *DB) All(column ...string) []map[string]interface{} {
 			return ConvertStringToArray(hash.Value.(string))
 		}
 	}
+	log.Println(d.sql)
 	rows, err := d.kel.Query(d.sql)
 	toError(err)
 	columns, _ := rows.Columns()
@@ -136,7 +137,7 @@ func setColumn(column ...[]string) string {
 func (d *DB) FindOne(column ...string) map[string]interface{} {
 
 	d.formatSql["column"] = setColumn(column)
-	d.formatSql["limit"] = "limit 1"
+	d.formatSql["limit"] = " limit 1"
 
 	d.sql = d.formatSql["select"] + d.formatSql["column"] + d.formatSql["from"] + d.formatSql["where"] + d.formatSql["limit"]
 	if d.Cache != nil {
@@ -146,6 +147,7 @@ func (d *DB) FindOne(column ...string) map[string]interface{} {
 			return tjson.Decode(hash.Value.(string))
 		}
 	}
+	log.Println(d.sql)
 	rows, err := d.kel.Query(d.sql)
 	toError(err)
 	columns, _ := rows.Columns()
