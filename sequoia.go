@@ -7,6 +7,7 @@ import (
 	"github.com/tungyao/sequoia/caches"
 	"github.com/tungyao/tjson"
 	"log"
+	"strconv"
 )
 
 const (
@@ -23,6 +24,7 @@ type FUNC interface {
 	All(column ...string) []map[string]interface{}
 	FindOne(column ...string) map[string]interface{}
 	Count() *DB
+	Limit(str ...int) *DB
 	IsExits() *DB
 	Delete(string) *DB
 	Insert(string) *DB
@@ -52,6 +54,10 @@ type Config struct {
 	Cache           bool
 }
 
+func (d *DB) Limit(str ...int) *DB {
+	d.formatSql["limit"] = " limit " + strconv.FormatInt(int64(str[0]), 10) + "," + strconv.FormatInt(int64(str[1]), 10)
+	return d
+}
 func (d *DB) IsCache(b bool) *DB {
 	d.Iscache = b
 	return d
@@ -88,7 +94,7 @@ func (d *DB) All(column ...string) []map[string]interface{} {
 		d.Iscache = false
 	}()
 	d.formatSql["column"] = setColumn(column)
-	d.sql = d.formatSql["select"] + d.formatSql["column"] + d.formatSql["from"] + d.formatSql["where"]
+	d.sql = d.formatSql["select"] + d.formatSql["column"] + d.formatSql["from"] + d.formatSql["where"] + d.formatSql["limit"]
 	if d.Cache != nil && d.Iscache {
 		hash := d.Cache.HGet(d.sql)
 		if hash != nil {
