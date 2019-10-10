@@ -147,8 +147,7 @@ func (d *DB) FindOne(column ...string) map[string]interface{} {
 	if d.Cache != nil {
 		hash := d.Cache.HGet(d.sql)
 		if hash != nil {
-			log.Println("get caches")
-			log.Println(hash)
+			log.Println("get caches", d.sql)
 			return tjson.Decode(hash.Value.(string))
 		}
 	}
