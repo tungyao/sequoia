@@ -111,6 +111,7 @@ func (d *DB) All(column ...string) []map[string]interface{} {
 		n++
 
 	}
+	log.Println(data)
 	if d.Cache != nil {
 		log.Println("set caches")
 		d.Cache.HSet(caches.Cache{
