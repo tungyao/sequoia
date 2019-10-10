@@ -124,7 +124,7 @@ func (d *DB) All(column ...string) []map[string]interface{} {
 		n++
 
 	}
-	if d.Cache != nil && d.Iscache {
+	if d.Cache != nil && d.Iscache && len(data) != 0 {
 		log.Println("set caches")
 		d.Cache.HSet(caches.Cache{
 			Key:   d.sql,
@@ -184,7 +184,7 @@ func (d *DB) FindOne(column ...string) map[string]interface{} {
 		}
 	}
 	da := B2S(data).(map[string]interface{})
-	if d.Cache != nil && d.Iscache {
+	if d.Cache != nil && d.Iscache && len(da) != 0 {
 		log.Println("set caches")
 		d.Cache.HSet(caches.Cache{
 			Key:   d.sql,
