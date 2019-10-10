@@ -14,7 +14,7 @@ var db sequoia.FUNC = sequoia.NewDB(sequoia.Config{
 func TestDb(t *testing.T) {
 	//d:=`[{"id":"Mw=="}]`
 	//sequoia.ConvertStringToArray(d)aa
-	db.Insert("test").Key(map[string]string{"name": "asdzxc", "a": "5"}).Done()
+	//db.Insert("test").Key(map[string]string{"name": "asdzxc", "a": "5"}).Done()
 	//db.Update("test").Key(map[string]string{"name": "asdasdas"}).Where(map[string]string{"name": "asdzxc"}).Done()
 	//data := db.Select("test").All("name","id")
 	//data := db.Select("test").Sort("addtime", "desc").All("name", "id")

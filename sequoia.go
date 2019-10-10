@@ -304,15 +304,14 @@ func (d *DB) Query() []map[string]interface{} {
 		}
 		err = rows.Scan(columnPointers...)
 		toError(err)
-		//data[n] = make(map[string]interface{})
+		columno := make(map[string]interface{}, length)
 		for i := 0; i < length; i++ {
 			columnName := columns[i]
 			columnValue := columnPointers[i].(*interface{})
-			//data[n][columnName] = *columnValue
-			data = append(data, map[string]interface{}{columnName: *columnValue})
+			columno[columnName] = string((*columnValue).([]uint8))
 		}
+		data = append(data, columno)
 		n++
-
 	}
 	if d.Cache != nil && d.iscache && len(data) != 0 {
 		log.Println("set caches")
