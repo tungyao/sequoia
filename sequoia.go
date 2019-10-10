@@ -30,7 +30,7 @@ type FUNC interface {
 	Key(interface{}) *DB
 	Where(key map[string]string) *DB
 	Done() int64
-
+	IsCache(bool) *DB
 	Command(string) *DB
 	Execute() (int64, int64)
 	Query() []map[string]interface{}
@@ -45,12 +45,17 @@ type DB struct {
 	MaxOpen   int
 	MaxIde    int
 	Cache     *caches.Conn
+	Iscache   bool
 }
 type Config struct {
 	MaxOpen, MaxIde int
 	Cache           bool
 }
 
+func (d *DB) IsCache(b bool) *DB {
+	d.Iscache = b
+	return d
+}
 func NewDB(c Config) *DB {
 	if c.Cache {
 		cc := caches.New()
@@ -78,9 +83,13 @@ func (d *DB) Delete(s string) *DB {
 	return d
 }
 func (d *DB) All(column ...string) []map[string]interface{} {
+	defer func() {
+		d.formatSql = make(map[string]string)
+		d.Iscache = false
+	}()
 	d.formatSql["column"] = setColumn(column)
 	d.sql = d.formatSql["select"] + d.formatSql["column"] + d.formatSql["from"] + d.formatSql["where"]
-	if d.Cache != nil {
+	if d.Cache != nil && d.Iscache {
 		hash := d.Cache.HGet(d.sql)
 		if hash != nil {
 			log.Println("get caches")
@@ -115,7 +124,7 @@ func (d *DB) All(column ...string) []map[string]interface{} {
 		n++
 
 	}
-	if d.Cache != nil {
+	if d.Cache != nil && d.Iscache {
 		log.Println("set caches")
 		d.Cache.HSet(caches.Cache{
 			Key:   d.sql,
@@ -139,12 +148,15 @@ func setColumn(column ...[]string) string {
 
 }
 func (d *DB) FindOne(column ...string) map[string]interface{} {
-
+	defer func() {
+		d.formatSql = make(map[string]string)
+		d.Iscache = false
+	}()
 	d.formatSql["column"] = setColumn(column)
 	d.formatSql["limit"] = " limit 1"
 
 	d.sql = d.formatSql["select"] + d.formatSql["column"] + d.formatSql["from"] + d.formatSql["where"] + d.formatSql["limit"]
-	if d.Cache != nil {
+	if d.Cache != nil && d.Iscache {
 		hash := d.Cache.HGet(d.sql)
 		if hash != nil {
 			log.Println("get caches", d.sql)
@@ -172,7 +184,7 @@ func (d *DB) FindOne(column ...string) map[string]interface{} {
 		}
 	}
 	da := B2S(data).(map[string]interface{})
-	if d.Cache != nil {
+	if d.Cache != nil && d.Iscache {
 		log.Println("set caches")
 		d.Cache.HSet(caches.Cache{
 			Key:   d.sql,
@@ -242,6 +254,10 @@ func (d *DB) Where(key map[string]string) *DB {
 
 //TODO 数据
 func (d *DB) Done() int64 {
+	defer func() {
+		d.formatSql = make(map[string]string)
+		d.Iscache = false
+	}()
 	switch d.op {
 	case INSERT:
 		d.sql = d.formatSql["type"] + d.formatSql["key"]
