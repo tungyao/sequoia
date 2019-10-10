@@ -3,6 +3,7 @@ package test
 import (
 	"../caches"
 	"testing"
+	"time"
 )
 
 func TestRedis(t *testing.T) {
@@ -10,12 +11,15 @@ func TestRedis(t *testing.T) {
 	//	Key:"test",
 	//	Value:"hello",
 	//})
-	//caches.HSet(caches.Cache{
+	r := caches.New()
+	//r.HSet(caches.Cache{
 	//	Key:   "test",
-	//	Value: "hellos",
+	//	Value: "testtest",
 	//	Time:  0,
 	//})
-	Value := cache.HGet("test").Value
-	t.Log(Value)
+	time.Sleep(time.Second)
+	for i := 0; i < 100; i++ {
+		r.HGet("test")
+	}
 	//log.Println(fmt.Sprint(map[string]string{}))
 }

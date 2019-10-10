@@ -8,6 +8,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 //var (
@@ -21,6 +22,7 @@ type Cache struct {
 }
 type Conn struct {
 	Con net.Conn
+	sw  sync.RWMutex
 }
 
 func New() *Conn {
@@ -90,6 +92,8 @@ func (con Conn) HSet(cache Cache) {
 	}()
 }
 func (con Conn) Get(cacheName string) *Cache {
+	con.sw.Lock()
+	defer con.sw.Unlock()
 	s := "get" + " " + cacheName
 	_, err := con.Con.Write(format(s))
 	if err != nil {
@@ -106,24 +110,22 @@ func (con Conn) Get(cacheName string) *Cache {
 		Time:  0,
 	}
 }
-func (con Conn) HGet(s string) *Cache {
-	ss := md(s)
-	s = "get" + " " + ss
-	log.Println("get caches", s)
+func (con Conn) HGet(cacheName string) *Cache {
+	con.sw.Lock()
+	defer con.sw.Unlock()
+	s := "get" + " " + md(cacheName)
 	_, err := con.Con.Write(format(s))
 	if err != nil {
-		log.Println(err, "************")
+		log.Panic(err)
 	}
 	var msg = make([]byte, 4096)
-	n, err := con.Con.Read(msg)
-	if err != nil {
-		log.Println(err, "************")
-	}
-	if n == len(ss) || string(msg[:n]) == "$-1\r\n" {
+	n, _ := con.Con.Read(msg)
+	log.Println(string(msg[:n]))
+	if n == len(cacheName) {
 		return nil
 	}
 	return &Cache{
-		Key:   ss,
+		Key:   cacheName,
 		Value: strings.Split(string(msg[:n]), "\r\n")[1],
 		Time:  0,
 	}
