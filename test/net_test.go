@@ -17,9 +17,10 @@ func TestRedis(t *testing.T) {
 	//	Value: "testtest",
 	//	Time:  0,
 	//})
-	time.Sleep(time.Second)
 	for i := 0; i < 100; i++ {
-		r.HGet("test")
+		t.Log(r.HGet("test"))
+
 	}
+	time.Sleep(time.Second)
 	//log.Println(fmt.Sprint(map[string]string{}))
 }

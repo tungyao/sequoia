@@ -92,43 +92,50 @@ func (con Conn) HSet(cache Cache) {
 	}()
 }
 func (con Conn) Get(cacheName string) *Cache {
-	con.sw.Lock()
-	defer con.sw.Unlock()
-	s := "get" + " " + cacheName
-	_, err := con.Con.Write(format(s))
-	if err != nil {
-		log.Panic(err)
-	}
-	var msg = make([]byte, 4096)
-	n, _ := con.Con.Read(msg)
-	if n == len(cacheName) {
-		return nil
-	}
-	return &Cache{
-		Key:   cacheName,
-		Value: strings.Split(string(msg[:n]), "\r\n")[1],
-		Time:  0,
-	}
+	data := make(chan *Cache)
+	go func() {
+		con.sw.Lock()
+		defer con.sw.Unlock()
+		s := "get" + " " + cacheName
+		_, err := con.Con.Write(format(s))
+		if err != nil {
+			log.Panic(err)
+		}
+		var msg = make([]byte, 4096)
+		n, _ := con.Con.Read(msg)
+		if n == len(cacheName) {
+			data <- nil
+		}
+		data <- &Cache{
+			Key:   cacheName,
+			Value: strings.Split(string(msg[:n]), "\r\n")[1],
+			Time:  0,
+		}
+	}()
+	return <-data
 }
 func (con Conn) HGet(cacheName string) *Cache {
-	con.sw.Lock()
-	defer con.sw.Unlock()
-	s := "get" + " " + md(cacheName)
-	_, err := con.Con.Write(format(s))
-	if err != nil {
-		log.Panic(err)
-	}
-	var msg = make([]byte, 4096)
-	n, _ := con.Con.Read(msg)
-	log.Println(string(msg[:n]))
-	if n == len(cacheName) {
-		return nil
-	}
-	return &Cache{
-		Key:   cacheName,
-		Value: strings.Split(string(msg[:n]), "\r\n")[1],
-		Time:  0,
-	}
+	data := make(chan *Cache)
+	go func() {
+		con.sw.Lock()
+		defer con.sw.Unlock()
+		s := "get" + " " + md(cacheName)
+		_, err := con.Con.Write(format(s))
+		if err != nil {
+			log.Panic(err)
+		}
+		var msg = make([]byte, 4096)
+		n, _ := con.Con.Read(msg)
+		if n == len(cacheName) {
+			data <- nil
+		}
+		data <- &Cache{
+			Key:   cacheName,
+			Value: strings.Split(string(msg[:n]), "\r\n")[1],
+			Time:  0,
+		}
+	}()
+	return <-data
 }
 func md(s string) string {
 	Sha1Inst := sha1.New()
