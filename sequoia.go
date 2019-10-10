@@ -107,7 +107,7 @@ func (d *DB) All(column ...string) []map[string]interface{} {
 			columnName := columns[i]
 			columnValue := columnPointers[i].(*interface{})
 			//data[n][columnName] = *columnValue
-			columno[columnName] = *columnValue
+			columno[columnName] = string((*columnValue).([]uint8))
 		}
 		data = append(data, columno)
 		n++
