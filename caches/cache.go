@@ -109,6 +109,7 @@ func (con Conn) Get(cacheName string) *Cache {
 func (con Conn) HGet(s string) *Cache {
 	ss := md(s)
 	s = "get" + " " + ss
+	log.Println("get caches", s)
 	_, err := con.Con.Write(format(s))
 	if err != nil {
 		log.Println(err, "************")
