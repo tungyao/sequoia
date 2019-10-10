@@ -111,7 +111,7 @@ func (d *DB) Key(k interface{}) *DB {
 	return d
 }
 func (d *DB) Where(key map[string]string) *DB {
-	d.formatSql["where"] = " where " + ConvertMapString(key)
+	d.formatSql["where"] = " where " + ConvertMapStringAnd(key)
 	return d
 }
 func (d *DB) All(column ...string) []map[string]interface{} {

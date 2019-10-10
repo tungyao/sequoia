@@ -11,12 +11,19 @@ type operation interface {
 type _SQL struct {
 }
 
-func ConvertMapString(m map[string]string) string {
+func ConvertMapStringAnd(m map[string]string) string {
 	sl := ""
 	for k, v := range m {
 		sl += k + "='" + v + "'" + " and "
 	}
 	return sl[:len(sl)-4]
+}
+func ConvertMapString(m map[string]string) string {
+	sl := ""
+	for k, v := range m {
+		sl += k + "='" + v + "'" + ","
+	}
+	return sl[:len(sl)-1]
 }
 func ConvertArrayString(arr []string) string {
 	sl := ""
