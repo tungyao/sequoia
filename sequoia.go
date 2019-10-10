@@ -124,6 +124,7 @@ func (d *DB) All(column ...string) []map[string]interface{} {
 			return ConvertStringToArray(hash.Value.(string))
 		}
 	}
+	log.Println("***SQL***", d.sql)
 	rows, err := d.kel.Query(d.sql)
 	defer func() {
 		d.formatSql = make(map[string]string)
@@ -178,6 +179,7 @@ func (d *DB) Done() int64 {
 	case DELETE:
 		d.sql = d.formatSql["type"] + d.formatSql["where"]
 	}
+	log.Println("***SQL***", d.sql)
 	stmt, err := d.kel.Prepare(d.sql)
 	toError(err)
 	defer stmt.Close()
@@ -199,6 +201,7 @@ func (d *DB) FindOne(column ...string) map[string]interface{} {
 			return tjson.Decode(hash.Value.(string))
 		}
 	}
+	log.Println("***SQL***", d.sql)
 	rows, err := d.kel.Query(d.sql)
 	defer func() {
 		d.formatSql = make(map[string]string)
@@ -261,6 +264,7 @@ func (d *DB) Command(sql string) *DB {
 	return d
 }
 func (d *DB) Execute() (int64, int64) {
+	log.Println("***SQL***", d.sql)
 	stmt, err := d.kel.Prepare(d.sql)
 	toError(err)
 	res, err := stmt.Exec()
@@ -278,6 +282,7 @@ func (d *DB) Query() []map[string]interface{} {
 			return ConvertStringToArray(hash.Value.(string))
 		}
 	}
+	log.Println("***SQL***", d.sql)
 	rows, err := d.kel.Query(d.sql)
 	defer func() {
 		d.formatSql = make(map[string]string)
