@@ -111,10 +111,13 @@ func (con Conn) HGet(s string) *Cache {
 	s = "get" + " " + ss
 	_, err := con.Con.Write(format(s))
 	if err != nil {
-		log.Panic(err)
+		log.Println(err, "************")
 	}
 	var msg = make([]byte, 4096)
-	n, _ := con.Con.Read(msg)
+	n, err := con.Con.Read(msg)
+	if err != nil {
+		log.Println(err, "************")
+	}
 	if n == len(ss) || string(msg[:n]) == "$-1\r\n" {
 		return nil
 	}
