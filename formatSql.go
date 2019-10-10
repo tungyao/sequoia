@@ -14,9 +14,9 @@ type _SQL struct {
 func ConvertMapString(m map[string]string) string {
 	sl := ""
 	for k, v := range m {
-		sl += k + "='" + v + "'" + ","
+		sl += k + "='" + v + "'" + " and "
 	}
-	return sl[:len(sl)-1]
+	return sl[:len(sl)-4]
 }
 func ConvertArrayString(arr []string) string {
 	sl := ""

@@ -9,7 +9,7 @@ import (
 var db sequoia.FUNC = sequoia.NewDB(sequoia.Config{
 	MaxOpen: 2000,
 	MaxIde:  1000,
-	Cache:   true,
+	Cache:   false,
 }).Use("test", "123456", "root")
 
 func TestDb(t *testing.T) {
@@ -17,7 +17,7 @@ func TestDb(t *testing.T) {
 	//sequoia.ConvertStringToArray(d)
 	//db.Insert("test").Key(map[string]string{"name":"asdzxc"}).Done()
 	//db.Update("test").Key(map[string]string{"name": "asdasdas"}).Where(map[string]string{"name": "asdzxc"}).Done()
-	data := db.Select("test").Where(map[string]string{"id": "5"}).All("name")
+	data := db.Select("test").Where(map[string]string{"id": "5", "name": "123"}).FindOne("name")
 	log.Println(data)
 	//data2:=db.Select("test").All("id","name")
 	//fmt.Println(data2)
