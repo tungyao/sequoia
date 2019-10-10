@@ -90,6 +90,7 @@ func (d *DB) All(column ...string) []map[string]interface{} {
 	}
 	log.Println(d.sql)
 	rows, err := d.kel.Query(d.sql)
+	defer rows.Close()
 	toError(err)
 	columns, _ := rows.Columns()
 	length := len(columns)
@@ -154,6 +155,7 @@ func (d *DB) FindOne(column ...string) map[string]interface{} {
 	log.Println(d.sql)
 	rows, err := d.kel.Query(d.sql)
 	toError(err)
+	defer rows.Close()
 	columns, _ := rows.Columns()
 	length := len(columns)
 	data := make(map[string]interface{})
@@ -195,6 +197,7 @@ func (d *DB) Use(dbname string, pwd string, name string) *DB {
 	db, err := sql.Open("mysql", name+":"+pwd+"@tcp(localhost)/"+dbname+"?charset=utf8")
 	db.SetMaxOpenConns(d.MaxOpen)
 	db.SetMaxIdleConns(d.MaxIde)
+	db.Ping()
 	if err != nil {
 		panic(err)
 	}
@@ -248,7 +251,9 @@ func (d *DB) Done() int64 {
 	case DELETE:
 		d.sql = d.formatSql["type"] + d.formatSql["where"]
 	}
-	stmt, _ := d.kel.Prepare(d.sql)
+	stmt, err := d.kel.Prepare(d.sql)
+	toError(err)
+	defer stmt.Close()
 	res, err := stmt.Exec()
 	toError(err)
 	id, err := res.LastInsertId()
