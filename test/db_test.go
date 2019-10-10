@@ -17,7 +17,7 @@ func TestDb(t *testing.T) {
 	//db.Insert("test").Key(map[string]string{"name":"asdzxc"}).Done()
 	//db.Update("test").Key(map[string]string{"name": "asdasdas"}).Where(map[string]string{"name": "asdzxc"}).Done()
 	//data := db.Select("test").All("name","id")
-	data := db.Select("test").Limit(0, 2).All("name", "id")
+	data := db.Select("test").Sort("addtime", "desc").All("name", "id")
 	t.Log(data)
 	//log.Println(string(data[0]["name"].([]uint8)))
 	//data2:=db.Select("test").All("id","name")
