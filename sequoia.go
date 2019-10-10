@@ -1,10 +1,10 @@
 package sequoia
 
 import (
-	"../sequoia/caches"
 	"database/sql"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/tungyao/sequoia/caches"
 	"github.com/tungyao/tjson"
 	"log"
 )
@@ -189,8 +189,8 @@ func (d *DB) IsExits() *DB {
 func (d *DB) Use(dbname string, pwd string, name string) *DB {
 	d.db = dbname
 	db, err := sql.Open("mysql", name+":"+pwd+"@tcp(localhost)/"+dbname+"?charset=utf8")
-	db.SetMaxOpenConns(2000)
-	db.SetMaxIdleConns(1000)
+	db.SetMaxOpenConns(d.MaxOpen)
+	db.SetMaxIdleConns(d.MaxIde)
 	if err != nil {
 		panic(err)
 	}
