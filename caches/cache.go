@@ -74,6 +74,7 @@ func (con Conn) HExpire(key string, i int64) {
 func (con Conn) Set(cache Cache) {
 	go func() {
 		s := "set" + " " + cache.Key + " \"" + fmt.Sprint(cache.Value) + "\""
+		log.Println("***CACHE***", s)
 		_, err := con.Con.Write(format(s))
 		if err != nil {
 			log.Panic(err)
@@ -83,9 +84,8 @@ func (con Conn) Set(cache Cache) {
 func (con Conn) HSet(cache Cache) {
 	go func() {
 		s := "set" + " " + md(cache.Key) + " " + fmt.Sprint(cache.Value)
-		log.Print(s)
-		n, err := con.Con.Write(format(s))
-		log.Println(n)
+		log.Println("***CACHE***", s)
+		_, err := con.Con.Write(format(s))
 		if err != nil {
 			log.Panic(err)
 		}
@@ -97,14 +97,16 @@ func (con Conn) Get(cacheName string) *Cache {
 		con.sw.Lock()
 		defer con.sw.Unlock()
 		s := "get" + " " + cacheName
+		log.Println("***CACHE***", s)
 		_, err := con.Con.Write(format(s))
 		if err != nil {
 			log.Panic(err)
 		}
 		var msg = make([]byte, 4096)
 		n, _ := con.Con.Read(msg)
-		if n == len(cacheName) || string(msg[:n]) == "$-1\r\n" {
+		if getFormat(msg[:n]) {
 			data <- nil
+			return
 		}
 		data <- &Cache{
 			Key:   cacheName,
@@ -119,14 +121,17 @@ func (con Conn) HGet(cacheName string) *Cache {
 	go func() {
 		con.sw.Lock()
 		defer con.sw.Unlock()
-		s := "get" + " " + md(cacheName)
+		m := md(cacheName)
+		s := "get" + " " + m
+		log.Println("***CACHE***", s)
 		_, err := con.Con.Write(format(s))
 		if err != nil {
 			log.Panic(err)
 		}
 		var msg = make([]byte, 4096)
-		n, _ := con.Con.Read(msg)
-		if n == len(cacheName) || string(msg[:n]) == "$-1\r\n" {
+		n, err := con.Con.Read(msg)
+		log.Println(string(msg[:n]))
+		if getFormat(msg[:n]) {
 			data <- nil
 		}
 		data <- &Cache{
@@ -142,6 +147,17 @@ func md(s string) string {
 	Sha1Inst.Write([]byte(s))
 	Result := Sha1Inst.Sum([]byte(""))
 	return fmt.Sprintf("%x", Result)
+}
+func getFormat(b []byte) bool {
+	if len(b) < 5 {
+		return false
+	}
+	if b[0] == 36 && b[1] == 45 && b[2] == 49 && b[3] == 13 && b[4] == 10 {
+		return true
+	} else if b[0] == 43 && b[1] == 79 && b[2] == 75 && b[3] == 13 && b[4] == 10 {
+		return true
+	}
+	return false
 }
 func format(s string) []byte {
 	var pro string

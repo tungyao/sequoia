@@ -1,10 +1,9 @@
 package sequoia
 
 import (
+	"./caches"
 	"database/sql"
-	"fmt"
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/tungyao/sequoia/caches"
 	"github.com/tungyao/tjson"
 	"log"
 	"strconv"
@@ -157,7 +156,6 @@ func (d *DB) All(column ...string) []map[string]interface{} {
 
 	}
 	if d.Cache != nil && d.iscache && len(data) != 0 {
-		log.Println("set caches")
 		d.Cache.HSet(caches.Cache{
 			Key:   d.sql,
 			Value: tjson.Encode(data),
@@ -180,14 +178,13 @@ func (d *DB) Done() int64 {
 		d.sql = d.formatSql["type"] + d.formatSql["where"]
 	}
 	log.Println("***SQL***", d.sql)
-	stmt, err := d.kel.Prepare(d.sql)
+	sql := d.sql
+	stmt, err := d.kel.Prepare(sql)
 	toError(err)
-	defer stmt.Close()
 	res, err := stmt.Exec()
 	toError(err)
 	id, err := res.LastInsertId()
 	toError(err)
-	fmt.Println(d.sql)
 	return id
 }
 func (d *DB) FindOne(column ...string) map[string]interface{} {
@@ -228,7 +225,6 @@ func (d *DB) FindOne(column ...string) map[string]interface{} {
 	}
 	da := B2S(data).(map[string]interface{})
 	if d.Cache != nil && d.iscache && len(da) != 0 {
-		log.Println("set caches")
 		d.Cache.HSet(caches.Cache{
 			Key:   d.sql,
 			Value: tjson.Encode(da),
@@ -314,7 +310,6 @@ func (d *DB) Query() []map[string]interface{} {
 		n++
 	}
 	if d.Cache != nil && d.iscache && len(data) != 0 {
-		log.Println("set caches")
 		d.Cache.HSet(caches.Cache{
 			Key:   d.sql,
 			Value: tjson.Encode(data),
