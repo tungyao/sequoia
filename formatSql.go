@@ -41,7 +41,7 @@ func ConvertStringToArray(s string) []map[string]interface{} {
 	s = strings.Replace(s, "[", "", -1)
 	s = strings.Replace(s, "]", "", -1)
 	data := make([]map[string]interface{}, 0)
-	data = append(data, tjson.Decode(s))
+	data = append(data, tjson.Decode([]byte(s)))
 	return data
 }
 func keyForInsertOrUpdate(k interface{}, op int) string {
