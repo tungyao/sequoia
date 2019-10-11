@@ -1,9 +1,9 @@
 package sequoia
 
 import (
-	"./caches"
 	"database/sql"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/tungyao/sequoia/caches"
 	"github.com/tungyao/tjson"
 	"log"
 	"strconv"
