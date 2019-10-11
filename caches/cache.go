@@ -103,7 +103,7 @@ func (con Conn) Get(cacheName string) *Cache {
 		}
 		var msg = make([]byte, 4096)
 		n, _ := con.Con.Read(msg)
-		if n == len(cacheName) {
+		if n == len(cacheName) || string(msg[:n]) == "$-1\r\n" {
 			data <- nil
 		}
 		data <- &Cache{
@@ -126,7 +126,7 @@ func (con Conn) HGet(cacheName string) *Cache {
 		}
 		var msg = make([]byte, 4096)
 		n, _ := con.Con.Read(msg)
-		if n == len(cacheName) {
+		if n == len(cacheName) || string(msg[:n]) == "$-1\r\n" {
 			data <- nil
 		}
 		data <- &Cache{
@@ -158,17 +158,19 @@ func TestRedis() {
 	conn, err := net.Dial("tcp", "127.0.0.1:6379")
 	defer conn.Close()
 	if err != nil {
-		os.Exit(1)
+		os.Exit(0)
 	}
 	go func() {
 		_, err = conn.Write([]byte("PING\r\n"))
 		if err != nil {
-			fmt.Println(err)
+			log.Panic(err)
 		}
 	}()
 
 	var msg = make([]byte, 4096)
+
 	_, err = conn.Read(msg)
-	println(string(msg))
+
+	log.Println(string(msg))
 	_ = conn.Close()
 }
