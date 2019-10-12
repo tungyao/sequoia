@@ -5,9 +5,14 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/tungyao/sequoia/caches"
 	"github.com/tungyao/tjson"
-	"log"
+	"github.com/tungyao/yell"
 	"strconv"
 )
+
+var log = yell.New(yell.Config{
+	Path:     "/var/log",
+	FileName: "sequoia",
+}, "[SEQUOIA]")
 
 const (
 	INSERT = iota

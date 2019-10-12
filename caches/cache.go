@@ -3,7 +3,7 @@ package caches
 import (
 	"crypto/sha1"
 	"fmt"
-	"log"
+	"github.com/tungyao/yell"
 	"net"
 	"os"
 	"strconv"
@@ -11,10 +11,11 @@ import (
 	"sync"
 )
 
-//var (
-//	Conn net.Conn
-//	err error
-//)
+var log = yell.New(yell.Config{
+	Path:     "/var/log",
+	FileName: "redis-cache",
+}, "[CACHE]")
+
 type Cache struct {
 	Key   string
 	Value interface{}
