@@ -73,28 +73,86 @@ func (d *DB) Use(dbname string, pwd string, name string) *DB {
 
 //TODO------------------------------------------ MAIN FUNC S
 func (d *DB) Insert(table string) *DB {
-	d.op = INSERT
-	d.table = table
-	d.formatSql["type"] = "insert into `" + table + "`"
-	return d
+	format := make(map[string]string)
+	format["type"] = "insert into `" + table + "`"
+	kel := d.kel
+	return &DB{
+		op:        INSERT,
+		db:        d.db,
+		table:     table,
+		sql:       "",
+		kel:       kel,
+		formatSql: format,
+		MaxOpen:   d.MaxOpen,
+		MaxIde:    d.MaxIde,
+		Cache:     d.Cache,
+		iscache:   d.iscache,
+	}
+	//return d
 }
 func (d *DB) Update(table string) *DB {
-	d.op = UPDATE
-	d.table = table
-	d.formatSql["type"] = "update `" + table + "`"
-	return d
+	//d.op = UPDATE
+	//d.table = table
+	//d.formatSql["type"] = "update `" + table + "`"
+	//return d
+	format := make(map[string]string)
+	format["type"] = "update `" + table + "`"
+	kel := d.kel
+	return &DB{
+		op:        UPDATE,
+		db:        d.db,
+		table:     table,
+		sql:       "",
+		kel:       kel,
+		formatSql: format,
+		MaxOpen:   d.MaxOpen,
+		MaxIde:    d.MaxIde,
+		Cache:     d.Cache,
+		iscache:   d.iscache,
+	}
 }
-func (d *DB) Delete(s string) *DB {
-	d.op = DELETE
-	d.formatSql["type"] = "delete from `" + s + "`"
-	return d
+func (d *DB) Delete(table string) *DB {
+	//d.op = DELETE
+	//d.formatSql["type"] = "delete from `" + s + "`"
+	//return d
+	format := make(map[string]string)
+	format["type"] = "delete from `" + table + "`"
+	kel := d.kel
+	return &DB{
+		op:        Select,
+		db:        d.db,
+		table:     table,
+		sql:       "",
+		kel:       kel,
+		formatSql: format,
+		MaxOpen:   d.MaxOpen,
+		MaxIde:    d.MaxIde,
+		Cache:     d.Cache,
+		iscache:   d.iscache,
+	}
 }
-func (d *DB) Select(tablename string) *DB {
-	d.op = Select
-	d.formatSql = make(map[string]string)
-	d.formatSql["select"] = "select "
-	d.formatSql["from"] = " from `" + tablename + "`"
-	return d
+func (d *DB) Select(table string) *DB {
+	format := make(map[string]string)
+	format["select"] = "select "
+	format["from"] = " from `" + table + "`"
+	kel := d.kel
+	return &DB{
+		op:        Select,
+		db:        d.db,
+		table:     table,
+		sql:       "",
+		kel:       kel,
+		formatSql: format,
+		MaxOpen:   d.MaxOpen,
+		MaxIde:    d.MaxIde,
+		Cache:     d.Cache,
+		iscache:   d.iscache,
+	}
+	//d.op = Select
+	//d.formatSql = make(map[string]string)
+	//d.formatSql["select"] = "select "
+	//d.formatSql["from"] = " from `" + tablename + "`"
+	//return d
 }
 
 //TODO------------------------------------------ OPERATION S
@@ -124,7 +182,8 @@ func (d *DB) All(column ...string) []map[string]interface{} {
 		}
 	}
 	log.Println("***SQL***", d.sql)
-	rows, err := d.kel.Query(d.sql)
+	sq := d.sql
+	rows, err := d.kel.Query(sq)
 	defer func() {
 		d.formatSql = make(map[string]string)
 		d.sql = ""
@@ -178,8 +237,8 @@ func (d *DB) Done() int64 {
 		d.sql = d.formatSql["type"] + d.formatSql["where"]
 	}
 	log.Println("***SQL***", d.sql)
-	sql := d.sql
-	stmt, err := d.kel.Prepare(sql)
+	sq := d.sql
+	stmt, err := d.kel.Prepare(sq)
 	toError(err)
 	res, err := stmt.Exec()
 	toError(err)
@@ -198,8 +257,9 @@ func (d *DB) FindOne(column ...string) map[string]interface{} {
 			return tjson.Decode([]byte(hash.Value.(string)))
 		}
 	}
-	log.Println("***SQL***", d.sql)
-	rows, err := d.kel.Query(d.sql)
+	sq := d.sql
+	log.Println("***SQL***", sq)
+	rows, err := d.kel.Query(sq)
 	defer func() {
 		d.formatSql = make(map[string]string)
 		d.sql = ""
