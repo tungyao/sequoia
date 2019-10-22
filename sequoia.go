@@ -10,7 +10,7 @@ import (
 )
 
 var log = yell.New(yell.Config{
-	Path:     "/var/log",
+	Path:     "",
 	FileName: "sequoia",
 }, "[SEQUOIA]")
 
