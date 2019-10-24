@@ -2,11 +2,12 @@ package sequoia
 
 import (
 	"database/sql"
+	"strconv"
+
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/tungyao/sequoia/caches"
 	"github.com/tungyao/tjson"
 	"github.com/tungyao/yell"
-	"strconv"
 )
 
 var log = yell.New(yell.Config{
@@ -23,24 +24,25 @@ const (
 
 type FUNC interface {
 	Use(dbname string, pwd string, name string) *DB
-	//TODO------------------------------------------ MAIN FUNC
+	// TODO------------------------------------------ MAIN FUNC
 	Select(string) *DB
 	Insert(string) *DB
 	Delete(string) *DB
 	Update(string) *DB
-	//TODO------------------------------------------ OPERATION
+	Begin() *DB
+	// TODO------------------------------------------ OPERATION
 	Key(interface{}) *DB
 	Where(key map[string]string) *DB
 	FindOne(column ...string) map[string]interface{}
 	All(column ...string) []map[string]interface{}
 	Done() int64
-	//TODO-------------------------------------- AUXILIARY FUNC
+	// TODO-------------------------------------- AUXILIARY FUNC
 	Count() *DB
 	Limit(str ...int) *DB
 	IsExits() *DB
 	IsCache(bool) *DB
 	Sort(string, string) *DB
-	//TODO---------------------------------------- NATIVE FUNC
+	// TODO---------------------------------------- NATIVE FUNC
 	Command(string) *DB
 	Execute() (int64, int64)
 	Query() []map[string]interface{}
@@ -56,6 +58,7 @@ type DB struct {
 	MaxIde    int
 	Cache     *caches.Conn
 	iscache   bool
+	Tx        *sql.Tx
 }
 type Config struct {
 	MaxOpen, MaxIde int
@@ -76,7 +79,7 @@ func (d *DB) Use(dbname string, pwd string, name string) *DB {
 	return d
 }
 
-//TODO------------------------------------------ MAIN FUNC S
+// TODO------------------------------------------ MAIN FUNC S
 func (d *DB) Insert(table string) *DB {
 	format := make(map[string]string)
 	format["type"] = "insert into `" + table + "`"
@@ -92,14 +95,15 @@ func (d *DB) Insert(table string) *DB {
 		MaxIde:    d.MaxIde,
 		Cache:     d.Cache,
 		iscache:   d.iscache,
+		Tx:        d.Tx,
 	}
-	//return d
+	// return d
 }
 func (d *DB) Update(table string) *DB {
-	//d.op = UPDATE
-	//d.table = table
-	//d.formatSql["type"] = "update `" + table + "`"
-	//return d
+	// d.op = UPDATE
+	// d.table = table
+	// d.formatSql["type"] = "update `" + table + "`"
+	// return d
 	format := make(map[string]string)
 	format["type"] = "update `" + table + "`"
 	kel := d.kel
@@ -114,12 +118,13 @@ func (d *DB) Update(table string) *DB {
 		MaxIde:    d.MaxIde,
 		Cache:     d.Cache,
 		iscache:   d.iscache,
+		Tx:        d.Tx,
 	}
 }
 func (d *DB) Delete(table string) *DB {
-	//d.op = DELETE
-	//d.formatSql["type"] = "delete from `" + s + "`"
-	//return d
+	// d.op = DELETE
+	// d.formatSql["type"] = "delete from `" + s + "`"
+	// return d
 	format := make(map[string]string)
 	format["type"] = "delete from `" + table + "`"
 	kel := d.kel
@@ -134,6 +139,7 @@ func (d *DB) Delete(table string) *DB {
 		MaxIde:    d.MaxIde,
 		Cache:     d.Cache,
 		iscache:   d.iscache,
+		Tx:        d.Tx,
 	}
 }
 func (d *DB) Select(table string) *DB {
@@ -152,23 +158,46 @@ func (d *DB) Select(table string) *DB {
 		MaxIde:    d.MaxIde,
 		Cache:     d.Cache,
 		iscache:   d.iscache,
+		Tx:        d.Tx,
 	}
-	//d.op = Select
-	//d.formatSql = make(map[string]string)
-	//d.formatSql["select"] = "select "
-	//d.formatSql["from"] = " from `" + tablename + "`"
-	//return d
+	// d.op = Select
+	// d.formatSql = make(map[string]string)
+	// d.formatSql["select"] = "select "
+	// d.formatSql["from"] = " from `" + tablename + "`"
+	// return d
+}
+func (d *DB) Begin() *DB {
+	kel := d.kel
+	tx := d.Tx
+	be, err := kel.Begin()
+	if err != nil {
+		log.Panic(err)
+	}
+	tx = be
+	return &DB{
+		op:        0,
+		db:        "",
+		table:     "",
+		sql:       "",
+		kel:       kel,
+		formatSql: nil,
+		MaxOpen:   0,
+		MaxIde:    0,
+		Cache:     nil,
+		iscache:   false,
+		Tx:        tx,
+	}
 }
 
-//TODO------------------------------------------ OPERATION S
+// TODO------------------------------------------ OPERATION S
 func (d *DB) Key(k interface{}) *DB {
 	sl := keyForInsertOrUpdate(k, d.op)
-	//switch d.op {
-	//case INSERT:
+	// switch d.op {
+	// case INSERT:
 	//	d.sql += sl
-	//case UPDATE:
+	// case UPDATE:
 	//	d.sql += sl
-	//}
+	// }
 	d.formatSql["key"] = sl
 	return d
 }
@@ -188,6 +217,47 @@ func (d *DB) All(column ...string) []map[string]interface{} {
 	}
 	log.Println("***SQL***", d.sql)
 	sq := d.sql
+	if d.Tx != nil {
+		rows, err := d.Tx.Query(sq)
+		defer func() {
+			d.formatSql = make(map[string]string)
+			d.sql = ""
+			d.iscache = false
+			_ = rows.Close()
+		}()
+		toError(err)
+		columns, _ := rows.Columns()
+		length := len(columns)
+		data := make([]map[string]interface{}, 0)
+		n := 0
+		for rows.Next() {
+			value := make([]interface{}, length)
+			columnPointers := make([]interface{}, length)
+			for i := 0; i < length; i++ {
+				columnPointers[i] = &value[i]
+			}
+			rows.Scan(columnPointers...)
+			// data[n] = make(map[string]interface{})
+			columno := make(map[string]interface{}, length)
+			for i := 0; i < length; i++ {
+				columnName := columns[i]
+				columnValue := columnPointers[i].(*interface{})
+				// data[n][columnName] = *columnValue
+				columno[columnName] = string((*columnValue).([]uint8))
+			}
+			data = append(data, columno)
+			n++
+
+		}
+		if d.Cache != nil && d.iscache && len(data) != 0 {
+			d.Cache.HSet(caches.Cache{
+				Key:   d.sql,
+				Value: tjson.Encode(data),
+				Time:  0,
+			})
+		}
+		return data
+	}
 	rows, err := d.kel.Query(sq)
 	defer func() {
 		d.formatSql = make(map[string]string)
@@ -207,12 +277,12 @@ func (d *DB) All(column ...string) []map[string]interface{} {
 			columnPointers[i] = &value[i]
 		}
 		rows.Scan(columnPointers...)
-		//data[n] = make(map[string]interface{})
+		// data[n] = make(map[string]interface{})
 		columno := make(map[string]interface{}, length)
 		for i := 0; i < length; i++ {
 			columnName := columns[i]
 			columnValue := columnPointers[i].(*interface{})
-			//data[n][columnName] = *columnValue
+			// data[n][columnName] = *columnValue
 			columno[columnName] = string((*columnValue).([]uint8))
 		}
 		data = append(data, columno)
@@ -241,6 +311,13 @@ func (d *DB) Done() int64 {
 	case DELETE:
 		d.sql = d.formatSql["type"] + d.formatSql["where"]
 	}
+	if d.Tx != nil {
+		res, err := d.Tx.Exec(d.sql)
+		toError(err)
+		id, err := res.LastInsertId()
+		toError(err)
+		return id
+	}
 	log.Println("***SQL***", d.sql)
 	sq := d.sql
 	stmt, err := d.kel.Prepare(sq)
@@ -264,7 +341,52 @@ func (d *DB) FindOne(column ...string) map[string]interface{} {
 	}
 	sq := d.sql
 	log.Println("***SQL***", sq)
+
+	if d.Tx != nil {
+		rows, err := d.Tx.Query(d.sql)
+		defer func() {
+			d.formatSql = make(map[string]string)
+			d.sql = ""
+			d.iscache = false
+			d.Tx = nil
+			_ = rows.Close()
+		}()
+		toError(err)
+		columns, _ := rows.Columns()
+		length := len(columns)
+		data := make(map[string]interface{})
+		for rows.Next() {
+			value := make([]interface{}, length)
+			columnPointers := make([]interface{}, length)
+			for i := 0; i < length; i++ {
+				columnPointers[i] = &value[i]
+			}
+			rows.Scan(columnPointers...)
+			for i := 0; i < length; i++ {
+				columnName := columns[i]
+				columnValue := columnPointers[i].(*interface{})
+				data[columnName] = *columnValue
+			}
+		}
+		da := B2S(data).(map[string]interface{})
+		if d.Cache != nil && d.iscache && len(da) != 0 {
+			d.Cache.HSet(caches.Cache{
+				Key:   d.sql,
+				Value: tjson.Encode(da),
+				Time:  0,
+			})
+		}
+		return da
+	}
+
 	rows, err := d.kel.Query(sq)
+	defer func() {
+		d.formatSql = make(map[string]string)
+		d.sql = ""
+		d.iscache = false
+		d.Tx = nil
+		_ = rows.Close()
+	}()
 	defer func() {
 		d.formatSql = make(map[string]string)
 		d.sql = ""
@@ -299,7 +421,7 @@ func (d *DB) FindOne(column ...string) map[string]interface{} {
 	return da
 }
 
-//TODO-------------------------------------- AUXILIARY FUNC S
+// TODO-------------------------------------- AUXILIARY FUNC S
 func (d *DB) Limit(str ...int) *DB {
 	d.formatSql["limit"] = " limit " + strconv.FormatInt(int64(str[0]), 10) + "," + strconv.FormatInt(int64(str[1]), 10)
 	return d
@@ -319,15 +441,35 @@ func (d *DB) Sort(field, string2 string) *DB {
 	return d
 }
 
-//TODO---------------------------------------- NATIVE FUNC S
+// TODO---------------------------------------- NATIVE FUNC S
 func (d *DB) Command(sql string) *DB {
-	d.sql = sql
-	return d
+	kel := d.kel
+	return &DB{
+		op:        0,
+		db:        "",
+		table:     "",
+		sql:       sql,
+		kel:       kel,
+		formatSql: nil,
+		MaxOpen:   0,
+		MaxIde:    0,
+		Cache:     nil,
+		iscache:   false,
+		Tx:        d.Tx,
+	}
 }
 func (d *DB) Execute() (int64, int64) {
 	log.Println("***SQL***", d.sql)
 	stmt, err := d.kel.Prepare(d.sql)
 	toError(err)
+	if d.Tx != nil {
+		res, err := d.Tx.Exec(d.sql)
+		toError(err)
+		id, err := res.LastInsertId()
+		toError(err)
+		rw, err := res.RowsAffected()
+		return rw, id
+	}
 	res, err := stmt.Exec()
 	toError(err)
 	id, err := res.LastInsertId()
@@ -344,6 +486,46 @@ func (d *DB) Query() []map[string]interface{} {
 		}
 	}
 	log.Println("***SQL***", d.sql)
+	if d.Tx != nil {
+		rows, err := d.kel.Query(d.sql)
+		defer func() {
+			d.formatSql = make(map[string]string)
+			d.sql = ""
+			d.iscache = false
+			_ = rows.Close()
+		}()
+		toError(err)
+		columns, err := rows.Columns()
+		toError(err)
+		length := len(columns)
+		data := make([]map[string]interface{}, 0)
+		n := 0
+		for rows.Next() {
+			value := make([]interface{}, length)
+			columnPointers := make([]interface{}, length)
+			for i := 0; i < length; i++ {
+				columnPointers[i] = &value[i]
+			}
+			err = rows.Scan(columnPointers...)
+			toError(err)
+			columno := make(map[string]interface{}, length)
+			for i := 0; i < length; i++ {
+				columnName := columns[i]
+				columnValue := columnPointers[i].(*interface{})
+				columno[columnName] = string((*columnValue).([]uint8))
+			}
+			data = append(data, columno)
+			n++
+		}
+		if d.Cache != nil && d.iscache && len(data) != 0 {
+			d.Cache.HSet(caches.Cache{
+				Key:   d.sql,
+				Value: tjson.Encode(data),
+				Time:  0,
+			})
+		}
+		return data
+	}
 	rows, err := d.kel.Query(d.sql)
 	defer func() {
 		d.formatSql = make(map[string]string)
@@ -384,7 +566,7 @@ func (d *DB) Query() []map[string]interface{} {
 	return data
 }
 
-//TODO-------------------------------------- OTHER FUNC
+// TODO-------------------------------------- OTHER FUNC
 func toError(err error) {
 	if err != nil {
 		log.Panic(err)
