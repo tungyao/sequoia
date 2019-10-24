@@ -16,7 +16,7 @@ Select one column
 //Where(map[string]string)
 //FindOne(field name)
 
-db.Select("test").Where(map[string]string{"id":"2"}).FindOne("id", "name")
+db.Select("test").Where(map[string]string{"id":"2"}).IsCache(true).FindOne("id", "name")
 ==> map[string]interface{}
 ```
 Select one column
@@ -29,7 +29,7 @@ db.Select("test").FindOne("id", "name")
 ```
 Select All
 ```go
-db.Select("test").All("id","name")
+db.Select("test").Sort("time","desc").All("id","name")
 ==>[map[string]interface{}]
 ```
 Insert One
